@@ -2,12 +2,12 @@
 import math
 
 class Sim_advanced:
-    def __init__(self):
+    def __init__(self, twr=4, pitch_speed100=73, drag_coefficient=0.0045):
         self.g = 9.81  # Acceleration due to gravity (m/s^2)
         self.mass = 1
-        self.twr = 4
-        self.pitch_speed100 = 73
-        self.drag_coefficient = 0.0045
+        self.twr = twr
+        self.pitch_speed100 = pitch_speed100
+        self.drag_coefficient = drag_coefficient
         # self.max_speed = TODO
         self.thrust = self.twr * self.mass * self.g
 
