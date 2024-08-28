@@ -1,4 +1,5 @@
 import numpy as np
+from headers import *
 
 def find_header_row(file_path, identifier):
     with open(file_path, 'r') as file:
@@ -41,20 +42,22 @@ def read_csv_as_dict(file_path):
     # Create a dictionary where the keys are column names and the values are arrays of floats
     data_dict = {column_names[i]: data[:, i] for i in range(len(column_names))}
 
-    data_dict["GPS_speed"] = data_dict["GPS_speed"] / 100
+    data_dict[header_gps_speed] = data_dict[header_gps_speed] / 100
+    data_dict[header_pitch] = data_dict[header_pitch] * header_pitch_multiplier_to_rad
+    data_dict[header_voltage] = data_dict[header_voltage] * header_voltage_multiplier_to_volts
 
     motor_columns = [col for col in column_names if col.startswith('motor[')]
     throttle_values = np.mean([data_dict[col] for col in motor_columns], axis=0)
     data_dict['Throttle'] = throttle_values / 2048
 
     # Adjust the "time" column to start from zero
-    time_values = data_dict["time"]
-    data_dict["time"] = (data_dict["time"] - data_dict["time"][0]) / 1e6
+    time_values = data_dict[header_time]
+    data_dict[header_time] = (data_dict[header_time] - data_dict[header_time][0]) / 1e6
     
     # Calculate the average time interval (dt) in seconds
-    num_intervals = len(data_dict["time"]) - 1
+    num_intervals = len(data_dict[header_time]) - 1
     if num_intervals > 0:
-        dt = (data_dict["time"][-1] - data_dict["time"][0]) / num_intervals
+        dt = (data_dict[header_time][-1] - data_dict[header_time][0]) / num_intervals
         data_dict["dt"] = dt
 
     data_dict["total_lines"] = total_lines
