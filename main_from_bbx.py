@@ -68,7 +68,7 @@ if __name__ == '__main__':
         print("Minimum Value:", minimum_value)
 
     if False:
-        bounds = [(2,10), (0.001, 0.05)]
+        bounds = [(0.1,5), (0.01, 5)]
         get_error_with_data = partial(get_error_sim2, data_dict=data_dict)
         result = differential_evolution(get_error_with_data, bounds, workers=-1)
         optimal_params = result.x
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     data_sim_basic = []
     data_sim_advanced = []
     sim_advanced = Sim_advanced(twr=6.00180600e+00, pitch_speed100=9.83766073e+01, drag_coefficient=5.08622920e-03)
-    sim_basic = Sim_basic(twr=3.5729982, drag_coefficient=0.00727245)
+    sim_basic = Sim_basic(gravity=0.52903722, delay=1.08798696)
     v_basic = 0
     v_advanced = 0
     for i in range(data_dict["total_lines"]):
@@ -147,4 +147,4 @@ if __name__ == '__main__':
     #ax3.legend(loc='upper right')
 
     # Show the plot
-    plt.show()
+plt.show()
