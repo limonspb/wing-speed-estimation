@@ -34,7 +34,7 @@ def read_csv_as_dict(file_path):
             
             # Print progress
             if i % 1000 == 0 or i == total_lines + header_row:
-                print(f"Progress: {i - header_row} / {total_lines} rows")
+                print(f"Reading file: {i - header_row} / {total_lines} rows")
     
     # Convert list of arrays to a numpy array
     data = np.vstack(data_list)

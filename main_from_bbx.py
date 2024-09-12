@@ -1,86 +1,105 @@
-# main.py
-
-# Import the necessary modules
 import matplotlib.pyplot as plt
-from csv_reader import read_csv_as_dict
+from scipy.optimize import differential_evolution
+import numpy as np
+
 import math
+from functools import partial
+import time
+
+from csv_reader import read_csv_as_dict
 from sim_basic import *
 from sim_advanced import *
-from scipy.optimize import differential_evolution
-from functools import partial
 from headers import *
+from utils import *
+import settings
 
-
-def get_error_sim1(params, data_dict):
-    twr, pitch_speed100, drag_coefficient = params
-    sim = Sim_advanced(twr, pitch_speed100, drag_coefficient)
+def get_error_sim_advanced(params, data_dict, bbx_loop_range):
+    param_twr, param_prop_pitch, param_drag_coefficient = params
+    sim = Sim_advanced(param_twr, param_prop_pitch, param_drag_coefficient)
     v = 0
     error = 0
-    speeds = data_dict[header_gps_speed]
     count = 0
-    for i in range(data_dict["total_lines"]):
-        v = v + sim.get_acceleration(v, data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * data_dict['dt']
+
+    dt = data_dict['dt'] * bbx_loop_range.step
+    pitches = data_dict[header_pitch]
+    throttles = data_dict['Throttle']
+    voltages = data_dict[header_voltage]
+    gps_speeds = data_dict[header_gps_speed]
+
+    for i in bbx_loop_range:
+        v = v + sim.get_acceleration(v, pitches[i], throttles[i], voltages[i]) * dt
         v = max(v, 0)
-        d_error = abs(v - speeds[i])
+        d_error = abs(v - gps_speeds[i])
         if not math.isnan(d_error):        
             error = error + d_error
             count = count + 1
-        if data_dict[header_time][i] > 215:
-            break
     
     return error/count
 
-def get_error_sim2(params, data_dict):
-    twr, drag_coefficient = params
-    sim = Sim_basic(twr, drag_coefficient)
+def get_error_sim_basic(params, data_dict, bbx_loop_range):
+    param_gravity, param_delay = params
+    sim = Sim_basic(param_gravity, param_delay)
     v = 0
     error = 0
-    speeds = data_dict[header_gps_speed]
     count = 0
-    for i in range(data_dict["total_lines"]):
-        v = v + sim.get_acceleration(v, data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * data_dict['dt']
+
+    dt = data_dict['dt'] * bbx_loop_range.step
+    pitches = data_dict[header_pitch]
+    throttles = data_dict['Throttle']
+    voltages = data_dict[header_voltage]
+    gps_speeds = data_dict[header_gps_speed]
+
+    for i in bbx_loop_range:
+        v = v + sim.get_acceleration(v, pitches[i], throttles[i], voltages[i]) * dt
         v = max(v, 0)
-        d_error = abs(v - speeds[i])
+        d_error = abs(v - gps_speeds[i])
         if not math.isnan(d_error):        
             error = error + d_error
             count = count + 1
-        if data_dict[header_time][i] > 215:
-            break
     
     return error/count
 
-
-
-if __name__ == '__main__':
-
+if __name__ == '__main__':    
     # Example usage of the function
     file_path = 'logs/1.BFL.csv'
     data_dict = read_csv_as_dict(file_path)
 
-    #test = get_error((4, 73, 0.0045), data_dict=data_dict)
-    if False:
-        bounds = [(2,10), (40, 100), (0.001, 0.04)]
-        get_error_with_data = partial(get_error_sim1, data_dict=data_dict)
-        result = differential_evolution(get_error_with_data, bounds, workers=-1)
+    bbx_loop_range = calculate_bbx_loop_range(data_dict=data_dict)
+
+    if settings.calculate:
+        print("Running differential_evolution for ADVANCED")
+        bounds = [range_twr, range_pitch, range_drag_k]
+        get_error_with_data = partial(get_error_sim_advanced, data_dict=data_dict, bbx_loop_range=bbx_loop_range)
+        start_time = time.time()
+        result = differential_evolution(get_error_with_data, bounds, workers=1)
+        seconds = time.time() - start_time
+        print(f"Advanced optimization time: {format_seconds(seconds)}")
         optimal_params = result.x
         minimum_value = result.fun
         print("Optimal Parameters:", optimal_params)
         print("Minimum Value:", minimum_value)
+        settings.twr, settings.prop_pitch, settings.drag_k = optimal_params
 
-    if False:
-        bounds = [(0.1,5), (0.01, 5)]
-        get_error_with_data = partial(get_error_sim2, data_dict=data_dict)
-        result = differential_evolution(get_error_with_data, bounds, workers=-1)
+    if settings.calculate:
+        print("Running differential_evolution for BASIC")
+        bounds = [range_gravity, range_delay]
+        get_error_with_data = partial(get_error_sim_basic, data_dict=data_dict, bbx_loop_range=bbx_loop_range)
+        start_time = time.time()
+        result = differential_evolution(get_error_with_data, bounds, workers=1)
+        seconds = time.time() - start_time
+        print(f"Basic optimization time: {format_seconds(seconds)}")
         optimal_params = result.x
         minimum_value = result.fun
         print("Optimal Parameters:", optimal_params)
         print("Minimum Value:", minimum_value)
+        settings.tpa_gravity, settings.tpa_delay = optimal_params
 
+    print_cli_settings()
 
     data_sim_basic = []
     data_sim_advanced = []
-    sim_advanced = Sim_advanced(twr=6.00180600e+00, pitch_speed100=9.83766073e+01, drag_coefficient=5.08622920e-03)
-    sim_basic = Sim_basic(gravity=0.52903722, delay=1.08798696)
+    sim_advanced = Sim_advanced(in_twr=settings.twr, in_prop_pitch=settings.prop_pitch, in_drag_k=settings.drag_k)
+    sim_basic = Sim_basic(in_gravity=settings.tpa_gravity, in_delay=settings.tpa_delay)
     v_basic = 0
     v_advanced = 0
     for i in range(data_dict["total_lines"]):
