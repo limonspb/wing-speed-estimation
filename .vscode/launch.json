@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Run Main File (No Debug)",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/main_from_bbx.py",
+        "console": "integratedTerminal",
+        "justMyCode": true,
+        "internalConsoleOptions": "neverOpen"
+      }
+    ]
+  }
+  

@@ -46,9 +46,10 @@ def read_csv_as_dict(file_path):
     data_dict[header_pitch] = data_dict[header_pitch] * header_pitch_multiplier_to_rad
     data_dict[header_voltage] = data_dict[header_voltage] * header_voltage_multiplier_to_volts
 
-    motor_columns = [col for col in column_names if col.startswith('motor[')]
-    throttle_values = np.mean([data_dict[col] for col in motor_columns], axis=0)
-    data_dict['Throttle'] = throttle_values / 2048
+    #motor_columns = [col for col in column_names if col.startswith('motor[')]
+    #throttle_values = np.mean([data_dict[col] for col in motor_columns], axis=0)
+    #data_dict['Throttle'] = throttle_values / 2048
+    data_dict['Throttle'] = data_dict['debug[2]']/1000
 
     # Adjust the "time" column to start from zero
     time_values = data_dict[header_time]
