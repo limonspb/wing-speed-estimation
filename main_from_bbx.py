@@ -23,12 +23,13 @@ def get_error(sim, data_dict, bbx_loop_range):
 
     dt = data_dict['dt'] * bbx_loop_range.step
     pitches = data_dict[header_pitch]
+    rolls = data_dict[header_roll]
     throttles = data_dict['Throttle']
     voltages = data_dict[header_voltage]
     gps_speeds = data_dict[header_gps_speed]
 
     for i in bbx_loop_range:
-        v = v + sim.get_acceleration(v, pitches[i], throttles[i], voltages[i]) * dt
+        v = v + sim.get_acceleration(v, rolls[i], pitches[i], throttles[i], voltages[i]) * dt
         v = max(v, 0)
         d_error = (v - gps_speeds[i])**2
         if not math.isnan(d_error):        
@@ -79,7 +80,7 @@ if __name__ == '__main__':
 
     if settings.calculate:
         print("Running differential_evolution for ADVANCED")
-        bounds = [range_pitch_offset, range_thrust, range_pitch, range_drag_k]
+        bounds = [range_pitch_offset, range_thrust, range_prop_pitch, range_drag_k]
         get_error_with_data = partial(get_error_sim_advanced, data_dict=data_dict, bbx_loop_range=bbx_loop_range)
         optimal_params = get_optimal_params(get_error_with_data, bounds, "ADVANCED")
         settings.pitch_offset_advanced, settings.thrust, settings.prop_pitch, settings.drag_k = optimal_params
@@ -98,11 +99,11 @@ if __name__ == '__main__':
     v_basic = 0
     v_advanced = 0
     for i in range(data_dict["total_lines"]):
-        v_basic = v_basic + sim_basic.get_acceleration(v_basic, data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * data_dict['dt']
+        v_basic = v_basic + sim_basic.get_acceleration(v_basic, data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * data_dict['dt']
         v_basic = max(v_basic, 0)
         data_sim_basic.append(v_basic)
 
-        v_advanced = v_advanced + sim_advanced.get_acceleration(v_advanced, data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * data_dict['dt']
+        v_advanced = v_advanced + sim_advanced.get_acceleration(v_advanced, data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * data_dict['dt']
         v_advanced = max(v_advanced, 0)
         data_sim_advanced.append(v_advanced)
 

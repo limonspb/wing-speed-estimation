@@ -1,6 +1,8 @@
 import math
 
-header_pitch = "debug[1]"
+header_roll = "debug[1]"
+header_pitch = "debug[2]"
+header_throttle = "debug[3]"
 header_gps_speed = "GPS_speed"
 header_time = "time"
 header_voltage = "vbatLatest"

@@ -12,7 +12,8 @@ class Sim_basic:
         self.max_voltage = max_voltage
         self.pitch_offset = in_pitch_offset
 
-    def get_acceleration(self, speed, pitch, trottle, voltage):
+    def get_acceleration(self, speed, roll, pitch, trottle, voltage):
         scaled_throttle = trottle #* voltage / self.max_voltage
-        a = scaled_throttle * scaled_throttle * self.twr * self.g - self.drag_coefficient * speed * speed / self.mass + self.g * math.sin(pitch + self.pitch_offset / 180 * math.pi)
+        correctedPitch = pitch + math.cos(pitch) * math.cos(roll) * self.pitch_offset / 180 * math.pi
+        a = scaled_throttle * scaled_throttle * self.twr * self.g - self.drag_coefficient * speed * speed / self.mass + self.g * math.sin(correctedPitch)
         return a

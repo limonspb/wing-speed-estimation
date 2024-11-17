@@ -15,12 +15,13 @@ class Sim_advanced:
         self.thrust = self.twr * self.mass * self.g
         self.pitch_offset = in_pitch_offset
 
-    def get_acceleration(self, speed, pitch, trottle, voltage):
+    def get_acceleration(self, speed, roll, pitch, trottle, voltage):
         scaled_throttle = trottle #* voltage / self.max_voltage
+        correctedPitch = pitch + math.cos(pitch) * math.cos(roll) * self.pitch_offset / 180 * math.pi
         drag_force = self.drag_coefficient * speed**2
         thrust_coef = scaled_throttle ** 2 - scaled_throttle * speed / (self.propPitchMaxSpeed)
         thrust_force = thrust_coef * self.thrust
-        gravity_force = - self.mass * self.g * math.sin(pitch + self.pitch_offset / 180 * math.pi)
+        gravity_force = - self.mass * self.g * math.sin(correctedPitch)
         net_force = thrust_force - drag_force - gravity_force
         a = net_force / self.mass
         return a
