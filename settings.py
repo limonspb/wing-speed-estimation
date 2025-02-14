@@ -7,7 +7,7 @@ calculate = True
 # user defined parameters
 max_voltage = 25.2 # volts
 #max_voltage = 12.6 # volts
-mass = 0.9 # kilograms
+mass = 1.72 # kilograms
 motor_kv = 1960
 #motor_kv = 4533
 
@@ -36,6 +36,22 @@ dt_target = 0.01
 time_start = 0
 time_stop = 999
 
+thrust_aerodynamics = 2.5 # kilograms
+prop_pitch_aerodynamics = 4.1 # inches
+# aerodynamics parameters
+wing_load = 5.57     #kg/m^2
+air_density = 1.225 #
+lift_zero = 0.01
+lift_slope = 0.1
+drag_parasitic = 0.03
+drag_induced = 0.2
+
+
+range_lift_zero = (-0.1, 0.1)
+range_lift_slope = (0.05, 0.2)
+range_drag_parasitic = (0.01, 0.08)
+range_drag_induced = (0.1, 0.4)
+
 def print_cli_settings():
     settings_text = (
         f"\n"
@@ -55,6 +71,15 @@ def print_cli_settings():
         f"set motor_kv = {round(motor_kv)}\n"
         #f"set tpa_speed_max_voltage = {round(max_voltage * 100)}\n"
         f"set tpa_speed_pitch_offset = {round(pitch_offset_advanced * 10)}\n"
+        f"#========================================\n"
+        f"set tpa_speed_type = AERODYNAMICS\n"
+        f"mass = {mass}\n"
+        f"set tpa_speed_adv_thrust = {round(thrust_aerodynamics * 1000)}\n"
+        f"set tpa_speed_adv_prop_pitch = {round(prop_pitch_aerodynamics * 100)}\n"
+        f"lift_zero = {lift_zero}\n"
+        f"lift_slope = {lift_slope}\n"
+        f"drag_parasitic = {drag_parasitic}\n"
+        f"drag_induced = {lift_slope}\n"
         f"#========================================\n"
     )
     print(settings_text)

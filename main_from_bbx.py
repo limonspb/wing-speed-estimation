@@ -10,33 +10,38 @@ import time
 from csv_reader import read_csv_as_dict
 from sim_basic import *
 from sim_advanced import *
+from sim_aerodynamics import *
 from headers import *
 from utils import *
 import settings
 import sys
 
 
-def get_error(sim, data_dict, bbx_loop_range):
+def get_error(sim, data_dict, bbx_loop_range, use_aerodynamics = False):
     v = 0
     error = 0
     count = 0
-
     dt = data_dict['dt'] * bbx_loop_range.step
     pitches = data_dict[header_pitch]
     rolls = data_dict[header_roll]
     throttles = data_dict['Throttle']
     voltages = data_dict[header_voltage]
     gps_speeds = data_dict[header_gps_speed]
+    accel_z = data_dict[header_accel_z]
 
     for i in bbx_loop_range:
-        v = v + sim.get_acceleration(v, rolls[i], pitches[i], throttles[i], voltages[i]) * dt
+        if use_aerodynamics == False:
+            accel = sim.get_acceleration(v, rolls[i], pitches[i], throttles[i], voltages[i])
+        else:
+            accel = sim.get_acceleration(v, accel_z[i], rolls[i], pitches[i], throttles[i], voltages[i])
+        v = v + accel * dt
         v = max(v, 0)
         d_error = (v - gps_speeds[i])**2
-        if not math.isnan(d_error):        
+        if not math.isnan(d_error):
             error = error + d_error
             count = count + 1
-    
     return error/count
+
 
 def get_error_sim_advanced(params, data_dict, bbx_loop_range):
     param_pitch_offset, param_thrust, param_prop_pitch, param_drag_coefficient = params
@@ -48,14 +53,19 @@ def get_error_sim_basic(params, data_dict, bbx_loop_range):
     sim = Sim_basic(param_pitch_offset, param_gravity, param_delay)
     return get_error(sim, data_dict, bbx_loop_range)
 
+def get_error_sim_aerodynamics(params, data_dict, bbx_loop_range):
+    param_thrust, param_prop_pitch, param_lift_zero, param_lift_slope, param_drag_parasitic, paramm_drag_induce = params
+    sim = Sim_aerodynamics(param_thrust, param_prop_pitch, param_lift_zero, param_lift_slope, param_drag_parasitic, paramm_drag_induce)
+    return get_error(sim, data_dict, bbx_loop_range, True)
+
 def get_optimal_params(get_error_with_data, bounds, sim_name):
     start_time = time.time()
     result = differential_evolution(get_error_with_data, bounds, workers=1,
         #popsize=150,
-        #mutation=(0.5, 1.5), 
-        #recombination=0.9, 
-        #tol=0.0001, 
-        #maxiter=3000, 
+        #mutation=(0.5, 1.5),
+        #recombination=0.9,
+        #tol=0.0001,
+        #maxiter=3000,
         #strategy='rand2bin'
         )
     seconds = time.time() - start_time
@@ -92,12 +102,27 @@ if __name__ == '__main__':
         optimal_params = get_optimal_params(get_error_with_data, bounds, "BASIC")
         settings.pitch_offset_basic, settings.tpa_gravity, settings.tpa_delay = optimal_params
 
+    if settings.calculate:
+        print("Running differential_evolution for AERODYNAMICS")
+        bounds = [range_thrust, range_prop_pitch, range_lift_zero, range_lift_slope, range_drag_parasitic, range_drag_induced]
+        get_error_with_data = partial(get_error_sim_aerodynamics, data_dict=data_dict, bbx_loop_range=bbx_loop_range)
+        optimal_params = get_optimal_params(get_error_with_data, bounds, "AERODYNAMICS")
+        settings.thrust_aerodynamics, settings.prop_pitch_aerodynamics, settings.lift_zero,  settings.lift_slope, settings.drag_parasitic, settings.drag_induced = optimal_params
+
+
+
+
+
+
     data_sim_basic = []
     data_sim_advanced = []
+    data_sim_aerodynamics = []
     sim_advanced = Sim_advanced(in_pitch_offset=settings.pitch_offset_advanced, in_thrust=settings.thrust, in_prop_pitch=settings.prop_pitch, in_drag_k=settings.drag_k)
     sim_basic = Sim_basic(in_pitch_offset=settings.pitch_offset_basic, in_gravity=settings.tpa_gravity, in_delay=settings.tpa_delay)
+    sim_aerodynamics = Sim_aerodynamics(settings.thrust_aerodynamics, settings.prop_pitch_aerodynamics, settings.lift_zero, settings.lift_slope, settings.drag_parasitic, settings.drag_induced)
     v_basic = 0
     v_advanced = 0
+    v_aerodynamics = 0
     for i in range(data_dict["total_lines"]):
         v_basic = v_basic + sim_basic.get_acceleration(v_basic, data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * data_dict['dt']
         v_basic = max(v_basic, 0)
@@ -107,8 +132,14 @@ if __name__ == '__main__':
         v_advanced = max(v_advanced, 0)
         data_sim_advanced.append(v_advanced)
 
+        accel = sim_aerodynamics.get_acceleration(v_aerodynamics, data_dict[header_accel_z][i], data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i])
+        v_aerodynamics = v_aerodynamics + accel * data_dict['dt']
+        v_aerodynamics = max(v_aerodynamics, 0)
+        data_sim_aerodynamics.append(v_aerodynamics)
+
     error_basic = get_error(sim_basic, data_dict, bbx_loop_range)
     error_advanced = get_error(sim_advanced, data_dict, bbx_loop_range)
+    error_aerodynamics = get_error(sim_aerodynamics, data_dict, bbx_loop_range, True)
 
 
     data_time = data_dict[header_time]  # Time in seconds
@@ -117,7 +148,7 @@ if __name__ == '__main__':
     data_pitch_degrees = data_dict[header_pitch] * 180 / math.pi  # Pitch values
 
     valid_gps_speeds = [val for val in data_gps_speed if not math.isnan(val)]
-    max_y_value = max(max(valid_gps_speeds), max(data_sim_basic), max(data_sim_advanced))
+    max_y_value = max(max(valid_gps_speeds), max(data_sim_basic), max(data_sim_advanced), max(data_sim_aerodynamics))
 
     # Create the figure
     fig, (ax_gps_speed, ax3) = plt.subplots(2, 1, figsize=(10, 8), sharex=True, gridspec_kw={'height_ratios': [7, 3]})
@@ -145,13 +176,20 @@ if __name__ == '__main__':
     ax_simulation2.set_ylabel('Advanced Simulation', color='b')
     ax_simulation2.tick_params(axis='y', labelcolor='b')
 
-    lines = [line_gps_speed, line_simulation1, line_simulation2]
+    ax_simulation3 = ax_gps_speed.twinx()
+    ax_simulation3.spines['right'].set_position(('outward', 60))
+    line_simulation3 = ax_simulation2.plot(data_time, data_sim_aerodynamics, label=f'Aerodynamics Simulation\n(err = {math.sqrt(error_aerodynamics / math.pi * 2):.2f})', color='c')[0]
+    ax_simulation3.set_ylabel('Aerodynamics Simulation', color='c')
+    ax_simulation3.tick_params(axis='y', labelcolor='c')
+
+    lines = [line_gps_speed, line_simulation1, line_simulation2, line_simulation3]
     labels = [line.get_label() for line in lines]
     ax_gps_speed.legend(lines, labels, loc='upper left')
 
     ax_gps_speed.set_ylim(0, max_y_value)
     ax_simulation1.set_ylim(0, max_y_value)
     ax_simulation2.set_ylim(0, max_y_value)
+    ax_simulation3.set_ylim(0, max_y_value)
 
     # Second plot (Throttle and Pitch over Time)
     ax3.plot(data_time, data_throttle, 'r', label='Throttle')  # Plot throttle in red
