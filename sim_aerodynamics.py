@@ -4,17 +4,14 @@ import settings
 import numpy as np
 
 class Sim_aerodynamics:
-    def __init__(self, in_thrust=4, in_prop_pitch=4.7, in_lift_zero=0.0, in_lift_slope=0.1, in_drag_parasitic=0.02, in_drag_induce=0.2):
-        self._g = 9.81  # Acceleration due to gravity (m/s^2)
-        self._deg_to_rad = math.pi / 180
+    def __init__(self, in_prop_max_speed_gain=1, in_lift_zero=0.0, in_lift_slope=0.1, in_drag_parasitic=0.02, in_drag_induce=0.15):
+        self.g = 9.81  # Acceleration due to gravity (m/s^2)
+        self.deg_to_rad = math.pi / 180
 
-        self._twr = in_thrust / settings.mass
-        self._propPitchMaxSpeed = 0.0004233 * in_prop_pitch * settings.motor_kv * settings.max_voltage
-        self._max_voltage = settings.max_voltage
+        self.propPitchMaxSpeed = 0.0004233 * settings.prop_pitch * settings.motor_kv * settings.max_voltage * in_prop_max_speed_gain
+        self.max_voltage = settings.max_voltage
         # self.max_speed = TODO
-        self._thrust = self._twr * settings.mass * self._g
-
-
+        self.static_thrust = settings.thrust * self.g
         self._lift_zero = in_lift_zero
         self._lift_slope = in_lift_slope
         self._drag_parasitic = in_drag_parasitic
@@ -65,8 +62,8 @@ class Sim_aerodynamics:
 
     def _get_motor_thrust(self, throttle, voltage, speed):
         scaled_throttle = throttle #* voltage / self.max_voltage
-        thrust_coef = scaled_throttle ** 2 - scaled_throttle * speed / (self._propPitchMaxSpeed)
-        thrust_force = thrust_coef * self._thrust
+        thrust_coef = scaled_throttle ** 2 - scaled_throttle * speed / (self.propPitchMaxSpeed)
+        thrust_force = thrust_coef * self.static_thrust
         return thrust_force
  
     def get_acceleration(self, speed, load_z, roll, pitch, throttle, voltage):

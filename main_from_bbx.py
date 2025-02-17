@@ -56,8 +56,8 @@ def get_error_sim_basic(params, data_dict, bbx_loop_range):
     return get_error(sim, data_dict, bbx_loop_range)
 
 def get_error_sim_aerodynamics(params, data_dict, bbx_loop_range):
-    param_thrust, param_prop_pitch, param_lift_zero, param_lift_slope, param_drag_parasitic, paramm_drag_induce = params
-    sim = Sim_aerodynamics(param_thrust, param_prop_pitch, param_lift_zero, param_lift_slope, param_drag_parasitic, paramm_drag_induce)
+    prop_max_speed_gain, param_lift_zero, param_lift_slope, param_drag_parasitic, paramm_drag_induce = params
+    sim = Sim_aerodynamics(prop_max_speed_gain, param_lift_zero, param_lift_slope, param_drag_parasitic, paramm_drag_induce)
     return get_error(sim, data_dict, bbx_loop_range, True)
 
 def get_optimal_params(get_error_with_data, bounds, sim_name):
@@ -89,27 +89,29 @@ if __name__ == '__main__':
     data_dict = read_csv_as_dict(file_path)
 
     bbx_loop_range = calculate_bbx_loop_range(data_dict=data_dict)
-
+    
     if settings.calculate:
+        print("Running differential_evolution for AERODYNAMICS")
+        bounds = [range_prop_max_speed_gain, range_lift_zero, range_lift_slope, range_drag_parasitic, range_drag_induced]
+        get_error_with_data = partial(get_error_sim_aerodynamics, data_dict=data_dict, bbx_loop_range=bbx_loop_range)
+        optimal_params = get_optimal_params(get_error_with_data, bounds, "AERODYNAMICS")
+        settings.prop_max_speed_gain, settings.lift_zero,  settings.lift_slope, settings.drag_parasitic, settings.drag_induced = optimal_params    
+
+    if True:
         print("Running differential_evolution for ADVANCED")
         bounds = [range_pitch_offset, range_thrust, range_prop_pitch, range_drag_k]
         get_error_with_data = partial(get_error_sim_advanced, data_dict=data_dict, bbx_loop_range=bbx_loop_range)
         optimal_params = get_optimal_params(get_error_with_data, bounds, "ADVANCED")
-        settings.pitch_offset_advanced, settings.thrust, settings.prop_pitch, settings.drag_k = optimal_params
+        settings.pitch_offset_advanced, settings.thrust_advanced, settings.prop_pitch_advanced, settings.drag_k_advanced = optimal_params
 
-    if settings.calculate:
+    if False:
         print("Running differential_evolution for BASIC")
         bounds = [range_pitch_offset, range_gravity, range_delay]
         get_error_with_data = partial(get_error_sim_basic, data_dict=data_dict, bbx_loop_range=bbx_loop_range)
         optimal_params = get_optimal_params(get_error_with_data, bounds, "BASIC")
         settings.pitch_offset_basic, settings.tpa_gravity, settings.tpa_delay = optimal_params
 
-    if settings.calculate:
-        print("Running differential_evolution for AERODYNAMICS")
-        bounds = [range_thrust, range_prop_pitch, range_lift_zero, range_lift_slope, range_drag_parasitic, range_drag_induced]
-        get_error_with_data = partial(get_error_sim_aerodynamics, data_dict=data_dict, bbx_loop_range=bbx_loop_range)
-        optimal_params = get_optimal_params(get_error_with_data, bounds, "AERODYNAMICS")
-        settings.thrust_aerodynamics, settings.prop_pitch_aerodynamics, settings.lift_zero,  settings.lift_slope, settings.drag_parasitic, settings.drag_induced = optimal_params
+    
 
 
 
@@ -119,17 +121,15 @@ if __name__ == '__main__':
     data_sim_basic = []
     data_sim_advanced = []
     data_sim_aerodynamics = []
-    sim_advanced = Sim_advanced(in_pitch_offset=settings.pitch_offset_advanced, in_thrust=settings.thrust, in_prop_pitch=settings.prop_pitch, in_drag_k=settings.drag_k)
+    sim_advanced = Sim_advanced(in_pitch_offset=settings.pitch_offset_advanced, in_thrust=settings.thrust_advanced, in_prop_pitch=settings.prop_pitch_advanced, in_drag_k=settings.drag_k_advanced)
     sim_basic = Sim_basic(in_pitch_offset=settings.pitch_offset_basic, in_gravity=settings.tpa_gravity, in_delay=settings.tpa_delay)
-    sim_aerodynamics = Sim_aerodynamics(settings.thrust_aerodynamics, settings.prop_pitch_aerodynamics, settings.lift_zero, settings.lift_slope, settings.drag_parasitic, settings.drag_induced)
-    
-    v0 = data_dict[header_gps_speed][bbx_loop_range[0]]
-    v_basic = v0
-    v_advanced = v0
-    v_aerodynamics = v0
-    dt = data_dict['dt'] * bbx_loop_range.step
-    for i in bbx_loop_range:
-        v_basic = v_basic + sim_basic.get_acceleration(v_basic, data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * dt
+    sim_aerodynamics = Sim_aerodynamics(settings.prop_max_speed_gain, settings.lift_zero, settings.lift_slope, settings.drag_parasitic, settings.drag_induced)
+    print(settings.prop_max_speed_gain, settings.lift_zero, settings.lift_slope, settings.drag_parasitic, settings.drag_induced)
+    v_basic = 0
+    v_advanced = 0
+    v_aerodynamics = 0
+    for i in range(data_dict["total_lines"]):
+        v_basic = v_basic + sim_basic.get_acceleration(v_basic, data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * data_dict['dt']
         v_basic = max(v_basic, 0)
         data_sim_basic.append(v_basic)
 

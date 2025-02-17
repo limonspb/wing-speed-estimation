@@ -17,43 +17,38 @@ range_pitch_offset = [-5, 5] # degrees
 range_delay = (0.1, 10) # seconds
 range_gravity = (0.1, 10) # percents / 100
 
-range_thrust = (0.5, 10.0) # kilograms
+range_thrust = (3.5, 3.6) # kilograms
 #range_thrust = (0.1, 1.5) # kilograms
-range_prop_pitch = (1.1, 7.0) # inches
+range_prop_pitch = (6.45, 6.55) # inches
 range_drag_k = (0.0001, 0.05)
 
 # parameters to plot with, when automatic parameters finding is False (OFF)
 prop_pitch = 6.5 # inches
-thrust = 3.6 # kilograms Yak-55
-
+drag_k = 0.0046
+thrust = 3.5 # kilograms
 pitch_offset_basic = 15 # degrees
 pitch_offset_advanced = 0 # degrees
-thrust_advanced = thrust
-prop_pitch_advanced = prop_pitch
-drag_k_advanced = 0.0046
 
 tpa_delay = 0.5
 tpa_gravity = 0.5
 
 dt_target = 0.01
-time_start = 200
-time_stop = 221
+time_start = 0
+time_stop = 999
 
 # aerodynamics parameters
-prop_max_speed_gain = 0.8
 wing_load = 5.57     #kg/m^2
 air_density = 1.225 #
 lift_zero = 0.01
 lift_slope = 0.1
-drag_parasitic = 0.03
 drag_induced = 0.2
+drag_parasitic = 0.03
 
 
-range_lift_zero = (-0.1, 0.1)
-range_lift_slope = (0.05, 0.2)
-range_drag_parasitic = (0.02, 0.08)
-range_drag_induced = (0.05, 0.3)
-range_prop_max_speed_gain = (0.4, 1)
+range_lift_zero = (0., 0.01)
+range_lift_slope = (0.05, 0.1)
+range_drag_parasitic = (0.02, 0.04)
+range_drag_induced = (0.05, 0.2)
 
 def print_cli_settings():
     settings_text = (
@@ -68,20 +63,12 @@ def print_cli_settings():
         f"#========================================\n"
         f"set tpa_speed_type = ADVANCED\n"
         f"set tpa_speed_adv_mass = {round(mass * 1000)}\n"
-        f"set tpa_speed_adv_drag_k = {round(drag_k_advanced * 10000)}\n"
-        f"set tpa_speed_adv_thrust = {round(thrust_advanced * 1000)}\n"
-        f"set tpa_speed_adv_prop_pitch = {round(prop_pitch_advanced * 100)}\n"
+        f"set tpa_speed_adv_drag_k = {round(drag_k * 10000)}\n"
+        f"set tpa_speed_adv_thrust = {round(thrust * 1000)}\n"
+        f"set tpa_speed_adv_prop_pitch = {round(prop_pitch * 100)}\n"
         f"set motor_kv = {round(motor_kv)}\n"
         #f"set tpa_speed_max_voltage = {round(max_voltage * 100)}\n"
         f"set tpa_speed_pitch_offset = {round(pitch_offset_advanced * 10)}\n"
-        f"#========================================\n"
-        f"set tpa_speed_type = AERODYNAMICS\n"
-        f"mass = {mass}\n"
-        f"prop_max_speed_gain = {prop_max_speed_gain}\n"
-        f"lift_zero = {lift_zero}\n"
-        f"lift_slope = {lift_slope}\n"
-        f"drag_parasitic = {drag_parasitic}\n"
-        f"drag_induced = {lift_slope}\n"
         f"#========================================\n"
     )
     print(settings_text)
