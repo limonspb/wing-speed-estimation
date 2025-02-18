@@ -97,14 +97,14 @@ if __name__ == '__main__':
         optimal_params = get_optimal_params(get_error_with_data, bounds, "AERODYNAMICS")
         settings.prop_max_speed_gain, settings.lift_zero,  settings.lift_slope, settings.drag_parasitic, settings.drag_induced = optimal_params    
 
-    if True:
+    if settings.calculate:
         print("Running differential_evolution for ADVANCED")
         bounds = [range_pitch_offset, range_thrust, range_prop_pitch, range_drag_k]
         get_error_with_data = partial(get_error_sim_advanced, data_dict=data_dict, bbx_loop_range=bbx_loop_range)
         optimal_params = get_optimal_params(get_error_with_data, bounds, "ADVANCED")
         settings.pitch_offset_advanced, settings.thrust_advanced, settings.prop_pitch_advanced, settings.drag_k_advanced = optimal_params
 
-    if False:
+    if settings.calculate:
         print("Running differential_evolution for BASIC")
         bounds = [range_pitch_offset, range_gravity, range_delay]
         get_error_with_data = partial(get_error_sim_basic, data_dict=data_dict, bbx_loop_range=bbx_loop_range)
@@ -125,11 +125,14 @@ if __name__ == '__main__':
     sim_basic = Sim_basic(in_pitch_offset=settings.pitch_offset_basic, in_gravity=settings.tpa_gravity, in_delay=settings.tpa_delay)
     sim_aerodynamics = Sim_aerodynamics(settings.prop_max_speed_gain, settings.lift_zero, settings.lift_slope, settings.drag_parasitic, settings.drag_induced)
     print(settings.prop_max_speed_gain, settings.lift_zero, settings.lift_slope, settings.drag_parasitic, settings.drag_induced)
-    v_basic = 0
-    v_advanced = 0
-    v_aerodynamics = 0
-    for i in range(data_dict["total_lines"]):
-        v_basic = v_basic + sim_basic.get_acceleration(v_basic, data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * data_dict['dt']
+    
+    v0 = data_dict[header_gps_speed][bbx_loop_range[0]]
+    v_basic = v0
+    v_advanced = v0
+    v_aerodynamics = v0
+    dt = data_dict['dt'] * bbx_loop_range.step
+    for i in bbx_loop_range:
+        v_basic = v_basic + sim_basic.get_acceleration(v_basic, data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * dt
         v_basic = max(v_basic, 0)
         data_sim_basic.append(v_basic)
 
