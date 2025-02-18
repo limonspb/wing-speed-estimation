@@ -28,6 +28,8 @@ def get_error(sim, data_dict, bbx_loop_range, use_aerodynamics = False):
     voltages = data_dict[header_voltage]
     gps_speeds = data_dict[header_gps_speed]
     accel_z = data_dict[header_accel_z]
+    
+    v = gps_speeds[bbx_loop_range[0]]
 
     for i in bbx_loop_range:
         if use_aerodynamics == False:
@@ -120,20 +122,23 @@ if __name__ == '__main__':
     sim_advanced = Sim_advanced(in_pitch_offset=settings.pitch_offset_advanced, in_thrust=settings.thrust, in_prop_pitch=settings.prop_pitch, in_drag_k=settings.drag_k)
     sim_basic = Sim_basic(in_pitch_offset=settings.pitch_offset_basic, in_gravity=settings.tpa_gravity, in_delay=settings.tpa_delay)
     sim_aerodynamics = Sim_aerodynamics(settings.thrust_aerodynamics, settings.prop_pitch_aerodynamics, settings.lift_zero, settings.lift_slope, settings.drag_parasitic, settings.drag_induced)
-    v_basic = 0
-    v_advanced = 0
-    v_aerodynamics = 0
-    for i in range(data_dict["total_lines"]):
-        v_basic = v_basic + sim_basic.get_acceleration(v_basic, data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * data_dict['dt']
+    
+    v0 = data_dict[header_gps_speed][bbx_loop_range[0]]
+    v_basic = v0
+    v_advanced = v0
+    v_aerodynamics = v0
+    dt = data_dict['dt'] * bbx_loop_range.step
+    for i in bbx_loop_range:
+        v_basic = v_basic + sim_basic.get_acceleration(v_basic, data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * dt
         v_basic = max(v_basic, 0)
         data_sim_basic.append(v_basic)
 
-        v_advanced = v_advanced + sim_advanced.get_acceleration(v_advanced, data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * data_dict['dt']
+        v_advanced = v_advanced + sim_advanced.get_acceleration(v_advanced, data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i]) * dt
         v_advanced = max(v_advanced, 0)
         data_sim_advanced.append(v_advanced)
 
         accel = sim_aerodynamics.get_acceleration(v_aerodynamics, data_dict[header_accel_z][i], data_dict[header_roll][i], data_dict[header_pitch][i], data_dict['Throttle'][i], data_dict[header_voltage][i])
-        v_aerodynamics = v_aerodynamics + accel * data_dict['dt']
+        v_aerodynamics = v_aerodynamics + accel * dt
         v_aerodynamics = max(v_aerodynamics, 0)
         data_sim_aerodynamics.append(v_aerodynamics)
 
@@ -142,11 +147,11 @@ if __name__ == '__main__':
     error_aerodynamics = get_error(sim_aerodynamics, data_dict, bbx_loop_range, True)
 
 
-    data_time = data_dict[header_time]  # Time in seconds
-    data_gps_speed = data_dict[header_gps_speed] # GPS speed values
-    data_throttle = data_dict['Throttle']  # Throttle values
-    data_pitch_degrees = data_dict[header_pitch] * 180 / math.pi  # Pitch values
-
+    data_time = data_dict[header_time][bbx_loop_range]  # Time in seconds
+    data_gps_speed = data_dict[header_gps_speed][bbx_loop_range] # GPS speed values
+    data_throttle = data_dict['Throttle'][bbx_loop_range]  # Throttle values
+    data_pitch_degrees = data_dict[header_pitch][bbx_loop_range] * 180 / math.pi  # Pitch values
+     
     valid_gps_speeds = [val for val in data_gps_speed if not math.isnan(val)]
     max_y_value = max(max(valid_gps_speeds), max(data_sim_basic), max(data_sim_advanced), max(data_sim_aerodynamics))
 
