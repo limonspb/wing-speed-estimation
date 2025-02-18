@@ -33,7 +33,7 @@ tpa_delay = 0.5
 tpa_gravity = 0.5
 
 dt_target = 0.01
-time_start = 24
+time_start = 200
 time_stop = 221
 
 thrust_aerodynamics = 2.5 # kilograms
