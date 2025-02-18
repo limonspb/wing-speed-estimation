@@ -185,7 +185,7 @@ if __name__ == '__main__':
     ax_simulation2.tick_params(axis='y', labelcolor='b')
 
     ax_simulation3 = ax_gps_speed.twinx()
-    ax_simulation3.spines['right'].set_position(('outward', 60))
+    ax_simulation3.spines['right'].set_position(('outward', 80))
     line_simulation3 = ax_simulation2.plot(data_time, data_sim_aerodynamics, label=f'Aerodynamics Simulation\n(err = {math.sqrt(error_aerodynamics / math.pi * 2):.2f})', color='c')[0]
     ax_simulation3.set_ylabel('Aerodynamics Simulation', color='c')
     ax_simulation3.tick_params(axis='y', labelcolor='c')
