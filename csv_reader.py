@@ -72,6 +72,8 @@ def read_csv_as_dict(file_path):
 
     data_dict["total_lines"] = total_lines
     acc_1G = int(bf_settings["acc_1G"])
+    data_dict[header_accel_x] = data_dict[header_accel_x] / acc_1G
+    data_dict[header_accel_y] = data_dict[header_accel_y] / acc_1G
     data_dict[header_accel_z] = data_dict[header_accel_z] / acc_1G
 
     return data_dict
