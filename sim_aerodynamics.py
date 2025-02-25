@@ -35,7 +35,7 @@ class Sim_aerodynamics:
     def _get_airspeed_pressure(self, speed):
         return settings.air_density * speed**2 / 2;
     
-    def _get_lift_force_coef(self, speed, load_z):
+    def get_lift_force_coef(self, speed, load_z):
         speedThreshold = 2.0
         liftActualC = 0
         if speed > speedThreshold:
@@ -57,6 +57,9 @@ class Sim_aerodynamics:
         sinPathAngle = -dir_x * math.sin(pitch) + dir_y * math.cos(pitch) * math.cos(roll)
         return sinPathAngle     #sin path angle, >0 - up, <0 down
     
+    def _calcPlaneSinPathAngle2(self, speed, vert_velo):
+        return vert_velo / speed     #sin path angle, >0 - up, <0 down    
+    
     def _get_drag_force_c(self, lift_force_c):
         return self._drag_parasitic + self._drag_induced * lift_force_c ** 2
 
@@ -67,11 +70,12 @@ class Sim_aerodynamics:
         return thrust_force
  
     def get_acceleration(self, speed, load_z, roll, pitch, throttle, voltage):
-        lift_force_coef = self._get_lift_force_coef(speed, load_z)
+        lift_force_coef = self.get_lift_force_coef(speed, load_z)
         self._angle_of_attack = self._get_angle_of_attack_estimate(lift_force_coef) * self._deg_to_rad
         drag_force = self._get_drag_force_c(lift_force_coef) * self._get_airspeed_pressure(speed) * self._wing_area
         thrust_force = self._get_motor_thrust(throttle, voltage, speed)
         sin_path_angle = self._calcPlaneSinPathAngle(self._angle_of_attack, pitch, roll)
+        #sin_path_angle = self._calcPlaneSinPathAngle2(speed, -1.82)
         self._path_angle = math.asin(sin_path_angle)
         load_x = (thrust_force - drag_force) / self._weight
         accel = self._g * (load_x - sin_path_angle)    #classical speed change equition by using of load value
