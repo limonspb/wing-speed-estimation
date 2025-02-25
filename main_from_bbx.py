@@ -15,7 +15,7 @@ from headers import *
 from utils import *
 import settings
 import sys
-
+from lift_by_aoa_est import *
 
 def get_error(sim, data_dict, bbx_loop_range, use_aerodynamics = False):
     v = 0
@@ -90,6 +90,9 @@ if __name__ == '__main__':
 
     bbx_loop_range = calculate_bbx_loop_range(data_dict=data_dict)
     
+    get_lift_by_aoa_line(data_dict=data_dict, bbx_loop_range = bbx_loop_range, use_gps_path = True)
+    get_lift_by_aoa_line(data_dict=data_dict, bbx_loop_range = bbx_loop_range, use_gps_path = False)
+    
     if settings.calculate:
         print("Running differential_evolution for AERODYNAMICS")
         bounds = [range_prop_max_speed_gain, range_lift_zero, range_lift_slope, range_drag_parasitic, range_drag_induced]
@@ -110,13 +113,6 @@ if __name__ == '__main__':
         get_error_with_data = partial(get_error_sim_basic, data_dict=data_dict, bbx_loop_range=bbx_loop_range)
         optimal_params = get_optimal_params(get_error_with_data, bounds, "BASIC")
         settings.pitch_offset_basic, settings.tpa_gravity, settings.tpa_delay = optimal_params
-
-    
-
-
-
-
-
 
     data_sim_basic = []
     data_sim_advanced = []

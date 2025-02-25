@@ -1,6 +1,10 @@
 import math
 import os
 
+log_read_step_size = 1
+time_start = 20.7
+time_stop = 221.7
+
 # change this between True/False if you need to run automatic parameters finding
 calculate = True
 
@@ -35,10 +39,6 @@ drag_k_advanced = 0.0046
 tpa_delay = 0.5
 tpa_gravity = 0.5
 
-dt_target = 0.01
-time_start = 8
-time_stop = 240
-
 # aerodynamics parameters
 prop_max_speed_gain = 0.8
 wing_load = 5.57     #kg/m^2
@@ -49,11 +49,17 @@ drag_parasitic = 0.03
 drag_induced = 0.2
 
 
-range_lift_zero = (-0.05, 0.05)
-range_lift_slope = (0.1, 0.2)
+range_lift_zero = (0.0, 0.0)
+range_lift_slope = (0.1, 0.1)
 range_drag_parasitic = (0.02, 0.08)
 range_drag_induced = (0.05, 0.3)
-range_prop_max_speed_gain = (0.4, 1)
+range_prop_max_speed_gain = (0.75, 0.75)
+
+# limits for angle of attack estimation
+limit_roll = 10
+limit_accel_x = 0.1
+limit_accel_z_min = -0.9
+limit_accel_z_max = 1.1
 
 def print_cli_settings():
     settings_text = (
